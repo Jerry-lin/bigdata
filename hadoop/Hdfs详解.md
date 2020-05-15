@@ -18,6 +18,8 @@ HDFS采用master/slaves 主从架构。存储在HDFS上的文件文件被拆分�
 
 ![](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/images/hdfsarchitecture.png)
 
+
+
 **NameNode（NN）** 负责管理文件系统命名空间和客户端访问文件。负责文件系统命名空间的操作：打开、关闭、重命名etc. 管理blocks到DNs的mapping。
 
 **DataNode（DN）** 负责所在节点上的数据的存储管理、处理来自client的读写请求，以及块的创建、删除、备份etc. 
@@ -314,52 +316,9 @@ FSDataInputStream#read()，将调用DFSInputStream#read(),实际会调用DFSInpu
 
 ## 3.2 HDFS写过程
 
-![hdfs写文件过程](https://img-blog.csdn.net/20170329210433667?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQveHVfX2Nn/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
-
-1. Client 通过FilterFileSystem create接口（最终调用DFSClient的create），创建FSDataOutputStream实例。通过FSDataOutputStream联系namenode在hdfs上创建文件。
-2. Client通过FSDataOutputStream（实现：HdfsDataOutputStream，包含了DFSOutputStream）向hdfs写数据。
-   1. 分packet，写DataQueue队列
-   2. DataStreamer 从DataQueue读数据， 并负责写到DataNode
-   3. 写成功，写失败
-3. 完成关闭
+![hdfs写文件过程](assets/Hdfs Write.png)
 
 
-
-```java
-// DistributedFileSystem创建DFSOutputStream（FSDataOutputStream）
-public FSDataOutputStream create(final Path f, final FsPermission permission,
-      final EnumSet<CreateFlag> cflags, final int bufferSize,
-      final short replication, final long blockSize,
-      final Progressable progress, final ChecksumOpt checksumOpt)
-      throws IOException {
-    statistics.incrementWriteOps(1);
-    storageStatistics.incrementOpCounter(OpType.CREATE);
-    Path absF = fixRelativePart(f);
-    return new FileSystemLinkResolver<FSDataOutputStream>() {
-      @Override
-      public FSDataOutputStream doCall(final Path p) throws IOException {
-        final DFSOutputStream dfsos = dfs.create(getPathName(p), permission,
-            cflags, replication, blockSize, progress, bufferSize,
-            checksumOpt);
-        return safelyCreateWrappedOutputStream(dfsos);
-      }
-      @Override
-      public FSDataOutputStream next(final FileSystem fs, final Path p)
-          throws IOException {
-        return fs.create(p, permission, cflags, bufferSize,
-            replication, blockSize, progress, checksumOpt);
-      }
-    }.resolve(this, absF);
-  }
-```
-
-
-
-### 3.2.1 DataStreamer
-
-DFSOutputStream
-
-在构建DFSOutputStream实例时，会调用DFSOutputStream.newStreamForCreate会创建**DataStreamer**，DataStreamer是一个后台发送线程，用于发送data packets到datanode。
 
 # 4. NameNode工作原理
 
