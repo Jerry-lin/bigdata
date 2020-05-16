@@ -316,7 +316,7 @@ FSDataInputStream#read()，将调用DFSInputStream#read(),实际会调用DFSInpu
 
 ## 3.2 HDFS写过程
 
-![hdfs写文件过程](assets/Hdfs Write.png)
+![hdfs写文件过程](assets/Hdfs_Write.png)
 
 
 
